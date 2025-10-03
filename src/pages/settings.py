@@ -49,7 +49,7 @@ class SettingsPage:
         # alerts
         new_user_modal_alert = dmc.Alert(
                 id="new-user-alert",
-                title="New User:",
+                title="New User",
                 duration=5000,
                 withCloseButton=True,
                 hide=True,
@@ -58,6 +58,14 @@ class SettingsPage:
         update_user_modal_alert = dmc.Alert(
                 id="uu-alert",
                 title="Update User",
+                duration=5000,
+                withCloseButton=True,
+                hide=True,
+            )
+
+        delete_user_modal_alert = dmc.Alert(
+                id="uu-delete-alert",
+                title="Delete User",
                 duration=5000,
                 withCloseButton=True,
                 hide=True,
@@ -75,6 +83,7 @@ class SettingsPage:
             [
                 new_user_modal_alert,
                 update_user_modal_alert,
+                delete_user_modal_alert,
                 html.Div(id="load"),
                 dmc.Group(
                     [
@@ -131,6 +140,7 @@ class SettingsPage:
 
     def update_cache_db(self, email_addr, username, min_thresh, max_thresh, celery_task:str):
         try:
+            # ADD
             old = json.loads(self.red.get("users_df"))
             users_df = pd.DataFrame.from_dict(old)
 
@@ -144,22 +154,24 @@ class SettingsPage:
                     "max_thresh_c": max_thresh,
                 }
                 new = pd.concat([users_df, pd.DataFrame([user])], ignore_index=True)
+
+            # UPDATE
             elif celery_task == "update_user":
-                mask = users_df["email_addr"] == email_addr
-                row = users_df.loc[mask]
+                print("UPDATING")
+                users = users_df["email_addr"] == email_addr
+                row = users_df.loc[users]
 
-                if row.empty:
-                    raise ValueError(f"No user found with email {email_addr}")
-                if len(row) > 1:
-                    raise ValueError(f"Multiple users found with email {email_addr}")
+                user = row.index[0]
 
-                idx = row.index[0]
+                users_df.at[user, "name"] = username
+                users_df.at[user, "min_thresh_c"] = int(min_thresh)
+                users_df.at[user, "max_thresh_c"] = int(max_thresh)
 
-                users_df.at[idx, "name"] = username
-                users_df.at[idx, "min_thresh_c"] = int(min_thresh)
-                users_df.at[idx, "max_thresh_c"] = int(max_thresh)
+                print("USER", user)
 
                 new = users_df
+
+            # DELETE
             elif celery_task == "delete_user":
                 mask = users_df["email_addr"] == email_addr
                 row = users_df.loc[mask]
@@ -175,6 +187,9 @@ class SettingsPage:
 
             new_min_thresh = new["min_thresh_c"].max()
             new_max_thresh = new["max_thresh_c"].min()
+
+            print("")
+            print("NEW DF", new)
 
             self.red.set("users_df", new.to_json(orient="records"))
             self.red.set("maxMinThresh", str(new_min_thresh))
@@ -260,6 +275,10 @@ class SettingsPage:
             Output("uu-alert", "color"),
             Output("uu-alert", "children"),
 
+            Output("uu-delete-alert", "hide"),
+            Output("uu-delete-alert", "color"),
+            Output("uu-delete-alert", "children"),
+
             Input("uu-delete", "n_clicks"),
             Input("uu-submit", "n_clicks"),
             Input("uu-submit-confirm", "n_clicks"),
@@ -278,33 +297,33 @@ class SettingsPage:
         def update_user_modal(a,b,c,d,e,f,g,h,email_addr, username, min_thresh, max_thresh):
             trigger = ctx.triggered_id
             if trigger == "uu-open":
-                return "uu-form", False, *update_user_alert_props(""),
+                return "uu-form", False, *update_user_alert_props(""), *delete_user_alert_props("")
 
             if trigger == "uu-submit":
-                return "uu-update-form-confirm", False, *update_user_alert_props("")
+                return "uu-update-form-confirm", False, *update_user_alert_props(""), *delete_user_alert_props("")
 
             if trigger == "uu-delete":
-                return "uu-delete-form-confirm", False, *update_user_alert_props("")
+                return "uu-delete-form-confirm", False, *update_user_alert_props(""), *delete_user_alert_props("")
 
             if trigger == "uu-submit-confirm":
                 error, success = self.handle_submit(email_addr=email_addr, username=username, min_thresh=min_thresh, max_thresh=max_thresh, celery_task="update_user")
                 if success:
                     self.update_cache_db(email_addr=email_addr, username=username, min_thresh=min_thresh, max_thresh=max_thresh, celery_task="update_user")
-                    return None, True, *update_user_alert_props("s")
+                    return None, True, *update_user_alert_props("s"), *delete_user_alert_props("")
                 else:
-                    return None, True, *update_user_alert_props(error), 
+                    return None, True, *update_user_alert_props(error), *delete_user_alert_props("")
 
             if trigger == "uu-delete-confirm":
                 print("DELETING DELETING")
                 error, success = self.handle_submit(email_addr=email_addr, username=username, min_thresh=min_thresh, max_thresh=max_thresh, celery_task="delete_user")
                 if success:
                     self.update_cache_db(email_addr=email_addr, username=username, min_thresh=min_thresh, max_thresh=max_thresh, celery_task="delete_user")
-                    return None, True, *delete_user_alert_props("s")
+                    return None, True, *update_user_alert_props(""), *delete_user_alert_props("s")
                 else:
-                    return None, True, *delete_user_alert_props(error), 
+                    return None, True, *update_user_alert_props(""), *delete_user_alert_props(error), 
 
             if trigger in ("uu-cancel", "uu-cancel-confirm", "uu-delete-cancel-confirm"):
-                return None, True, *update_user_alert_props("")
+                return None, True, *update_user_alert_props(""), *delete_user_alert_props("")
 
         @callback(
             Output("uu-select", "value"),
@@ -314,6 +333,11 @@ class SettingsPage:
         def update_email_selections(_):
             users = json.loads(self.red.get("users_df"))
             users_df = pd.DataFrame.from_dict(users)
+
+            print("")
+            print("OPENING")
+            print("USERS", users_df)
+
             emails = users_df["email_addr"].tolist()
             data = [{"value": e, "label": e} for e in emails]
             try:
