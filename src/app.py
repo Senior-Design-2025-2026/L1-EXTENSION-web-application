@@ -28,6 +28,7 @@ HOST      = os.getenv("HOST", "localhost")
 DASH_PORT = os.getenv("DASH_PORT", "8050")         
 SOCK      = os.getenv("SOCK")
 DB_URL    = os.getenv("DB_URL")
+MODE      = os.getenv("MODE")
 
 if not HOST:
     raise RuntimeError("HOST env var is not set")
@@ -76,7 +77,7 @@ app = Dash(
 
 app.title = "Lab 1: ECE Senior Design"
 
-live_page_obj      = LivePage(app=app, redis=red)
+live_page_obj      = LivePage(app=app, redis=red, mode=MODE)
 settings_page_obj  = SettingsPage(app=app, db=DB, redis=red, celery=celery_client)
 
 app.layout = dmc.MantineProvider(

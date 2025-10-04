@@ -100,47 +100,62 @@ class SettingsPage:
         )
 
     def handle_submit(self, email_addr, username, min_thresh, max_thresh, celery_task:str):
-        # 1. check for fields
-        fields = [min_thresh, max_thresh, email_addr, username]
-        fields = [None if f=="" else f for f in fields]
-        if any(f is None for f in fields):
-            error = "e1"
-            success = False
+        try:
+            # 1. check for fields
+            fields = [min_thresh, max_thresh, email_addr, username]
+            fields = [None if f in (None, "") else f for f in fields]
 
-        # 2. check for uiowa email
-        elif not email_addr.endswith("@uiowa.edu"):
-            error = "e2"
+            error = "y"
             success = False
-
-        # 3. basic checks passed; check for existence
-        elif celery_task == "add_user":
-            exists = self.DB.does_email_exist(email_addr)
-            if not exists:
-                error = ""
-                success = True
-            else:
-                error = "e3"
+            if any(f is None for f in fields):
+                error = "e1"
                 success = False
 
-        else:
-            error = ""
-            success = True
+            # 2. check for uiowa email
+            elif not email_addr.endswith("@uiowa.edu"):
+                error = "e2"
+                success = False
 
-        self.celery_client.send_task(
-            celery_task, 
-            kwargs={
-                "name":username,
-                "email_addr":email_addr,
-                "min_thresh_c":min_thresh,
-                "max_thresh_c":max_thresh,
-            }
-        )
+            # 3. basic checks passed; check for existence
+            elif celery_task == "add_user":
+                exists = self.DB.does_email_exist(email_addr)
+                if not exists:
+                    error = ""
+                    success = True
+                else:
+                    error = "e3"
+                    success = False
 
-        return [error, success]
+            elif celery_task in ("update_user", "delete_user"):
+                exists = self.DB.does_email_exist(email_addr)
+                if exists:
+                    error = ""
+                    success = True
+                else:
+                    error = "e3"
+                    success = False
+
+            # 4. perform action
+            if success:
+                self.celery_client.send_task(
+                    celery_task, 
+                    kwargs={
+                        "name":username,
+                        "email_addr":email_addr,
+                        "min_thresh_c":min_thresh,
+                        "max_thresh_c":max_thresh,
+                    }
+                )
+
+            return [error, success]
+        except Exception as e:
+            print("EXCEPTION - handle_submit()", e)
+            return ["x", False]
 
     def update_cache_db(self, email_addr, username, min_thresh, max_thresh, celery_task:str):
         try:
             # ADD
+            new = pd.DataFrame()
             old = json.loads(self.red.get("users_df"))
             users_df = pd.DataFrame.from_dict(old)
 
@@ -156,7 +171,7 @@ class SettingsPage:
                 new = pd.concat([users_df, pd.DataFrame([user])], ignore_index=True)
 
             # UPDATE
-            elif celery_task == "update_user":
+            if celery_task == "update_user":
                 users = users_df["email_addr"] == email_addr
                 row = users_df.loc[users]
 
@@ -170,27 +185,23 @@ class SettingsPage:
                 new = users_df
 
             # DELETE
-            elif celery_task == "delete_user":
+            if celery_task == "delete_user":
                 mask = users_df["email_addr"] == email_addr
                 row = users_df.loc[mask]
 
-                if row.empty:
-                    raise ValueError(f"No user found with email {email_addr}")
-                if len(row) > 1:
-                    raise ValueError(f"Multiple users found with email {email_addr}")
-
                 new = users_df.drop(row.index).reset_index(drop=True)
-            else:
-                new = users_df
 
-            new_min_thresh = new["min_thresh_c"].max()
-            new_max_thresh = new["max_thresh_c"].min()
+            if not new.empty:
+                new = new.drop_duplicates("email_addr", keep="first")
 
-            self.red.set("users_df", new.to_json(orient="records"))
-            self.red.set("maxMinThresh", str(new_min_thresh))
-            self.red.set("minMaxThresh", str(new_max_thresh))
+                new_min_thresh = new["min_thresh_c"].max()
+                new_max_thresh = new["max_thresh_c"].min()
+
+                self.red.set("users_df", new.to_json(orient="records"))
+                self.red.set("maxMinThresh", str(new_min_thresh))
+                self.red.set("minMaxThresh", str(new_max_thresh))
         except Exception as e:
-            print("Error adding to dataframe", e)
+            print("EXCEPTION - update_cache_db()", e)
 
     def callbacks(self):
 
@@ -333,7 +344,8 @@ class SettingsPage:
                 data = [{"value": e, "label": e} for e in emails]
                 val = data[0]
                 return val, data
-            except:
+            except Exception as e:
+                print("EXCEPTION - update_email_selections()", e)
                 return None, None
                 
 
@@ -360,5 +372,6 @@ class SettingsPage:
                 max_thresh = int(user["max_thresh_c"])
 
                 return name, min_thresh, max_thresh
-            except:
+            except Exception as e:
+                print("EXCEPTION - populate_row()", e)
                 return None, None, None

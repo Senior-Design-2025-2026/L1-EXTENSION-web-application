@@ -10,5 +10,5 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 COPY L1-EXTENSION-postgres-orm ./src/db
 COPY L1-EXTENSION-web-application/src ./src
 
-# CMD ["python", "src/app.py"]
-CMD ["python", "-u", "src/app.py"]
+CMD ["python", "src/app.py"]
+# CMD ["python", "-u", "src/app.py"]

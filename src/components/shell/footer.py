@@ -39,10 +39,10 @@ def build_footer_col(label: str, links: dict):
 # }
 
 DOCUMENTATION_LINKS = {
-    "Source Code": "https://github.com/Senior-Design-2025-2026/ECE-Senior-Design-Lab-1",
-    "Requirements": "https://github.com/Senior-Design-2025-2026/L1-web-application/blob/main/lab-1.pdf",
-    "Lab Report": "./404",
-    "Team GitHub:": ""
+    "Source Code": "https://github.com/Senior-Design-2025-2026/ECE-Senior-Design-Lab-1-EXTENSION",
+    "Requirements": "https://github.com/Senior-Design-2025-2026/ECE-Senior-Design-Lab-1-EXTENSION/blob/main/img/lab-1.pdf",
+    "Lab Report": "https://github.com/Senior-Design-2025-2026/ECE-Senior-Design-Lab-1-EXTENSION/blob/main/img/lab-report.pdf",
+    "Team GitHub": "https://github.com/Senior-Design-2025-2026"
 }
 
 # OTHER_PROJECTS_LINKS = {
@@ -91,8 +91,8 @@ def footer():
             [
                 university_statement,
                 documentation_col,
-                linked_in_col,
-                other_projects,
+                # linked_in_col,
+                # other_projects,
             ], 
             justify="space-evenly",
             align="start",

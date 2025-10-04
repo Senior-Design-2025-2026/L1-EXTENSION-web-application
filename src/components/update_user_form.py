@@ -43,6 +43,10 @@ def update_user_alert_props(alert_type:str) -> tuple:
         return (False, "red", "Error: email already exists")
     elif alert_type == "s":
         return (False, "green", "Success: user updated! Refresh to view.")
+    elif alert_type == "x":
+        return (False, "red", "Something unexpected happened. Try Again.")
+    elif alert_type == "y":
+        return (False, "red", "Please complete the form and try again.")
     else:
         return (True, None, None)
 
@@ -228,5 +232,7 @@ def delete_user_alert_props(alert_type):
         return (False, "red", "Error: email already exists")
     elif alert_type == "s":
         return (False, "green", "Success: user removed! Refresh to view.")
+    elif alert_type == "y":
+        return (False, "red", "Please complete the form and try again.")
     else:
         return (True, None, None)

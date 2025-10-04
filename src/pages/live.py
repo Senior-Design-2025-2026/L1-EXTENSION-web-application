@@ -18,8 +18,9 @@ def nan_to_none(temp):
     return None if pd.isna(temp) else temp
 
 class LivePage:
-    def __init__(self, app, redis):
+    def __init__(self, app, redis, mode):
         self.red = redis
+        self.MODE = mode
         
         if app is not None:
             self.callbacks()
@@ -137,8 +138,10 @@ class LivePage:
             Output(ThermostatCardAIO.ids.data("2"), "data"),
             Input("system-clock", "n_intervals"),
             Input("unit-select", "value"),
+            Input(ThermostatCardAIO.ids.segmented_control("1"), "value"),   # added for testing mode
+            Input(ThermostatCardAIO.ids.segmented_control("2"), "value"),
         )
-        def update_chart(n_intervals, unit):
+        def update_chart(n_intervals, unit, val1, val2):
             if ctx.triggered_id == "unit-select":       # virtualize (placing here as there is not a physical switch --> no logic needed)
                 self.red.set("temperatureUnit", unit)
 
@@ -182,6 +185,12 @@ class LivePage:
             sensor_1_temp = "UNPLUGGED" if is_unplugged_1 == "true" else sensor_1_temp
             sensor_2_temp = "UNPLUGGED" if is_unplugged_2 == "true" else sensor_2_temp
 
+            if self.MODE == "testing":
+                if val1 == "OFF":
+                    sensor_1_temp = None
+                if val2 == "OFF":
+                    sensor_2_temp = None
+                    
             thermostat_card_1 = {"reading": str(sensor_1_temp)}
             thermostat_card_2 = {"reading": str(sensor_2_temp)}
 
@@ -211,8 +220,15 @@ class LivePage:
             Input(ThermostatCardAIO.ids.segmented_control("1"), "value")
         )
         def toggle_sensor_1(n_intervals, wanted):
-            # virtualize
             actual = self.red.get("virtual:1:status")
+
+            # testing (immediate update)
+            if self.MODE == "testing" and wanted != actual:
+                self.red.set("virtual:1:wants_toggle", "true")
+                color = "green" if wanted == "ON" else "red"
+                return False, wanted, color
+
+            # real mode (change takes effect after 1 second)
             if ctx.triggered_id == ThermostatCardAIO.ids.segmented_control("1"):
                 if wanted != actual:              
                     self.red.set("virtual:1:wants_toggle", "true")
@@ -243,6 +259,14 @@ class LivePage:
             Input(ThermostatCardAIO.ids.segmented_control("2"), "value")
         )
         def toggle_sensor_2(n_intervals, wanted):
+            actual = self.red.get("virtual:2:status")
+
+            # testing (immediate update)
+            if self.MODE == "testing" and wanted != actual:
+                self.red.set("virtual:2:wants_toggle", "true")
+                color = "green" if wanted == "ON" else "red"
+                return False, wanted, color
+
             # virtualize
             actual = self.red.get("virtual:2:status")
             if ctx.triggered_id == ThermostatCardAIO.ids.segmented_control("2"):

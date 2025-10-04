@@ -39,6 +39,8 @@ def new_user_alert_props(alert_type:str) -> tuple:
         return (False, "red", "Error: email already exists")
     elif alert_type == "s":
         return (False, "green", "Success: user added! Refresh to view.")
+    elif alert_type == "x":
+        return (False, "red", "Something unexpected happened. Try Again.")
     else:
         return (True, None, None)
 
