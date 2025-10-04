@@ -157,7 +157,6 @@ class SettingsPage:
 
             # UPDATE
             elif celery_task == "update_user":
-                print("UPDATING")
                 users = users_df["email_addr"] == email_addr
                 row = users_df.loc[users]
 
@@ -167,7 +166,6 @@ class SettingsPage:
                 users_df.at[user, "min_thresh_c"] = int(min_thresh)
                 users_df.at[user, "max_thresh_c"] = int(max_thresh)
 
-                print("USER", user)
 
                 new = users_df
 
@@ -187,9 +185,6 @@ class SettingsPage:
 
             new_min_thresh = new["min_thresh_c"].max()
             new_max_thresh = new["max_thresh_c"].min()
-
-            print("")
-            print("NEW DF", new)
 
             self.red.set("users_df", new.to_json(orient="records"))
             self.red.set("maxMinThresh", str(new_min_thresh))
@@ -314,7 +309,6 @@ class SettingsPage:
                     return None, True, *update_user_alert_props(error), *delete_user_alert_props("")
 
             if trigger == "uu-delete-confirm":
-                print("DELETING DELETING")
                 error, success = self.handle_submit(email_addr=email_addr, username=username, min_thresh=min_thresh, max_thresh=max_thresh, celery_task="delete_user")
                 if success:
                     self.update_cache_db(email_addr=email_addr, username=username, min_thresh=min_thresh, max_thresh=max_thresh, celery_task="delete_user")
@@ -331,20 +325,17 @@ class SettingsPage:
             Input("uu-open", "n_clicks")
         )
         def update_email_selections(_):
-            users = json.loads(self.red.get("users_df"))
-            users_df = pd.DataFrame.from_dict(users)
-
-            print("")
-            print("OPENING")
-            print("USERS", users_df)
-
-            emails = users_df["email_addr"].tolist()
-            data = [{"value": e, "label": e} for e in emails]
             try:
+                users = json.loads(self.red.get("users_df"))
+                users_df = pd.DataFrame.from_dict(users)
+
+                emails = users_df["email_addr"].tolist()
+                data = [{"value": e, "label": e} for e in emails]
                 val = data[0]
+                return val, data
             except:
-                val = None
-            return val, data
+                return None, None
+                
 
         @callback(
             Output("uu-name", "value"),
@@ -354,17 +345,20 @@ class SettingsPage:
             prevent_initial_call=True,
         )
         def populate_row(selected):
-            users = json.loads(self.red.get("users_df"))
-            users_df = pd.DataFrame.from_dict(users)
-            row = users_df[users_df["email_addr"] == selected]
+            try:
+                users = json.loads(self.red.get("users_df"))
+                users_df = pd.DataFrame.from_dict(users)
+                row = users_df[users_df["email_addr"] == selected]
 
-            if row.empty:
-                return no_update, no_update, no_update
+                if row.empty:
+                    return no_update, no_update, no_update
 
-            user = row.iloc[0]
+                user = row.iloc[0]
 
-            name = user["name"]
-            min_thresh = int(user["min_thresh_c"])
-            max_thresh = int(user["max_thresh_c"])
+                name = user["name"]
+                min_thresh = int(user["min_thresh_c"])
+                max_thresh = int(user["max_thresh_c"])
 
-            return name, min_thresh, max_thresh
+                return name, min_thresh, max_thresh
+            except:
+                return None, None, None

@@ -31,29 +31,30 @@ def build_footer_col(label: str, links: dict):
     )
 
 
-LINKEDIN_LINKS = {
-    "Steven Austin": "./404",
-    "Sage Marks": "https://www.linkedin.com/in/sage-marks/",
-    "Matt Krueger": "https://www.linkedin.com/in/mattnkrueger/",
-    "Zack Mulholland": "https://www.linkedin.com/in/zack-mulholland-317914254/",
-}
+# LINKEDIN_LINKS = {
+#     "Steven Austin": "./404",
+#     "Sage Marks": "https://www.linkedin.com/in/sage-marks/",
+#     "Matt Krueger": "https://www.linkedin.com/in/mattnkrueger/",
+#     "Zack Mulholland": "https://www.linkedin.com/in/zack-mulholland-317914254/",
+# }
 
 DOCUMENTATION_LINKS = {
-    "Requirements": "https://github.com/Senior-Design-2025-2026/L1-web-application/blob/main/lab-1.pdf",
     "Source Code": "https://github.com/Senior-Design-2025-2026/ECE-Senior-Design-Lab-1",
+    "Requirements": "https://github.com/Senior-Design-2025-2026/L1-web-application/blob/main/lab-1.pdf",
     "Lab Report": "./404",
+    "Team GitHub:": ""
 }
 
-OTHER_PROJECTS_LINKS = {
-        "Lab 1 (THIS!)": "https://github.com/Senior-Design-2025-2026",
-    "Lab 2 (TBD)": "./404",
-    "Lab 3 (TBD)": "./404",
-    "Final (TBD)": "./404",
-}
+# OTHER_PROJECTS_LINKS = {
+#     "Lab 1 (THIS!)": "https://github.com/Senior-Design-2025-2026",
+#     "Lab 2 (TBD)": "./404",
+#     "Lab 3 (TBD)": "./404",
+#     "Final (TBD)": "./404",
+# }
 
-linked_in_col = build_footer_col("Team Members", LINKEDIN_LINKS)
 documentation_col = build_footer_col("Documentation", DOCUMENTATION_LINKS)
-other_projects = build_footer_col("Our Projects", OTHER_PROJECTS_LINKS)
+# linked_in_col = build_footer_col("Team Members", LINKEDIN_LINKS)
+# other_projects = build_footer_col("Our Projects", OTHER_PROJECTS_LINKS)
 
 university_statement = dmc.Card(
     dmc.Stack(
